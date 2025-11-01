@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boring Notes (পণ্ডিত)</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 2. Add custom font and styling */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Custom scrollbar for the feed */
+        #feed-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #feed-container::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        #feed-container::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        #feed-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Subtle background pattern */
+        body {
+            background-color: #f0f7ff; /* Fallback */
+            /* "Life colored background" */
+            background-image: linear-gradient(to right top, #d1f7ff, #d8f3ff, #e2effe, #ebebfb, #f3e8f6, #f8e5f1, #fde3ea, #ffe2e3, #ffe2dc, #ffe4d6, #ffe7d1, #ffebcd);
+            
+            /* "Study material graphics" - subtle SVG pattern */
+            background-image: linear-gradient(to right top, #d1f7ff, #d8f3ff, #e2effe, #ebebfb, #f3e8f6, #f8e5f1, #fde3ea, #ffe2e3, #ffe2dc, #ffe4d6, #ffe7d1, #ffebcd), 
+                              url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm-15-20v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zm30-20v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+    <!-- 
+      ============================================================
+      LOGIN MODAL (OVERLAY)
+      ============================================================
+    -->
+    <div id="login-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl p-6 md:p-10 w-full max-w-md text-center transform transition-all scale-100 opacity-100">
+            <div class="flex justify-center mx-auto w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <!-- Inline SVG for Logo/Icon -->
+                <svg class="w-10 h-10 text-blue-600 self-center" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.747 0-3.332.477-4.5 1.253"></path></svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Boring Notes</h1>
+            <p class="text-gray-600 mb-6">Sign in with your Student ID to continue.</p>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="student-id" class="sr-only">Student ID</label>
+                    <input type="text" id="student-id" placeholder="6-Digit ID (e.g., 251...)" class="w-full px-4 py-3 rounded-lg border border-gray-300 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" maxlength="6">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200">
+                    Sign In
+                </button>
+            </form>
+            <p id="login-error" class="text-red-500 text-sm mt-4 h-5"></p> <!-- Error message placeholder -->
+        </div>
+    </div>
+
+    <!-- 
+      ============================================================
+      MAIN APPLICATION (Hidden until logged in)
+      ============================================================
+    -->
+    <div id="app-container" class="hidden h-screen w-full p-4 md:p-6 lg:p-8">
+        <div class="h-full w-full max-w-7xl mx-auto flex flex-col bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden ring-1 ring-black ring-opacity-5">
+            
+            <!-- Header -->
+            <header class="flex-shrink-0 flex items-center justify-between p-4 md:p-5 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.747 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-900">Boring Notes</h1>
+                </div>
+                <div id="user-info" class="text-sm text-gray-600">
+                    Signed in as: <span id="user-student-id" class="font-semibold text-blue-700"></span>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+                
+                <!-- Column 1: Resource Feed -->
+                <div class="flex-1 flex flex-col overflow-hidden p-4 md:p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Shared Resources</h2>
+                    <div id="feed-container" class="flex-1 overflow-y-auto space-y-5 pr-2">
+                        <!-- Notes will be dynamically inserted here by Firebase -->
+                        <div id="loading-spinner" class="flex flex-col items-center justify-center h-full text-gray-500">
+                            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p class="mt-2">Loading notes...</p>
+                        </div>
+                        <div id="empty-state" class="hidden flex-col items-center justify-center h-full text-gray-500 p-8 text-center">
+                            <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <h3 class="font-semibold text-lg">The feed is empty</h3>
+                            <p>Be the first to share a note!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: New Post Form -->
+                <div class="flex-shrink-0 w-full md:w-96 lg:w-[450px] bg-gray-50 bg-opacity-70 border-l border-gray-200 p-4 md:p-6 overflow-y-auto">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-5">Share Something</h2>
+                    
+                    <form id="post-form">
+                        <!-- Tab Buttons -->
+                        <div class="mb-4 grid grid-cols-4 gap-1 rounded-lg bg-gray-200 p-1">
+                            <button type="button" id="tab-btn-text" class="tab-btn active" data-tab="text">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                                <span class="text-sm">Text</span>
+                            </button>
+                            <button type="button" id="tab-btn-link" class="tab-btn" data-tab="link">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"></path></svg>
+                                <span class="text-sm">Link</span>
+                            </button>
+                            <button type="button" id="tab-btn-video" class="tab-btn" data-tab="video">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="text-sm">Video</span>
+                            </button>
+                            <button type="button" id="tab-btn-file" class="tab-btn" data-tab="file">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.415a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                <span class="text-sm">File</span>
+                            </button>
+                        </div>
+                        <style>
+                            .tab-btn {
+                                @apply flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-gray-600 font-medium transition-all;
+                            }
+                            .tab-btn.active {
+                                @apply bg-white text-blue-600 shadow-sm;
+                            }
+                            .tab-panel {
+                                @apply hidden space-y-4;
+                            }
+                            .tab-panel.active {
+                                @apply block;
+                            }
+                        </style>
+
+                        <!-- Tab Panels -->
+                        <div class="space-y-4">
+                            <!-- Text Note -->
+                            <div id="tab-panel-text" class="tab-panel active">
+                                <input type="text" id="post-title-text" placeholder="Note Title (e.g., 'Physics Ch. 4 Summary')" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <textarea id="post-content-text" rows="6" placeholder="Type your note here..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+                            </div>
+                            <!-- Link -->
+                            <div id="tab-panel-link" class="tab-panel">
+                                <input type="text" id="post-title-link" placeholder="Link Title (e.g., 'Great Article on AI')" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <input type="url" id="post-content-link" placeholder="https://example.com" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <!-- YouTube Video -->
+                            <div id="tab-panel-video" class="tab-panel">
+                                <input type="text" id="post-title-video" placeholder="Video Title (e.g., 'Calculus 1 Explained')" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <input type="url" id="post-content-video" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                            <!-- File -->
+                            <div id="tab-panel-file" class="tab-panel">
+                                <input type="text" id="post-title-file" placeholder="File Title (e.g., 'History Notes PDF')" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <input type="file" id="post-content-file" class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                                <p class="text-xs text-gray-500 p-2 bg-yellow-50 rounded-md border border-yellow-200">
+                                    <strong>Note:</strong> This is a prototype. Real file uploads require a backend (like Firebase Storage). This will only share the file's name.
+                                </p>
+                            </div>
+                            
+                            <button id="post-submit-btn" type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center">
+                                <!-- Spinner (hidden by default) -->
+                                <svg id="post-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Share Note</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- 
+      ============================================================
+      AI ASSISTANT (পণ্ডিত) - Floating Action Button & Modal
+      ============================================================
+    -->
+    <button id="ai-fab" class="hidden fixed bottom-8 right-8 bg-gradient-to-br from-purple-600 to-blue-600 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transform transition-all hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300">
+        <!-- "Pandit" (Brain) Icon -->
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16v4m-2-2h4m5 16v4m-2-2h4M12 8a4 4 0 100 8 4 4 0 000-8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9C19.65 5.5 16.15 3 12 3S4.35 5.5 3.512 9a9 9 0 000 6C4.35 18.5 7.85 21 12 21s7.65-2.5 8.488-6a9 9 0 000-6z"></path></svg>
+    </button>
+
+    <!-- AI Chat Modal -->
+    <div id="ai-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-40 p-4 transition-opacity duration-300 opacity-0">
+        <div id="ai-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[70vh] flex flex-col transform transition-all scale-95 opacity-0">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16v4m-2-2h4m5 16v4m-2-2h4M12 8a4 4 0 100 8 4 4 0 000-8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9C19.65 5.5 16.15 3 12 3S4.35 5.5 3.512 9a9 9 0 000 6C4.35 18.5 7.85 21 12 21s7.65-2.5 8.488-6a9 9 0 000-6z"></path></svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900">পণ্ডিত <span class="text-gray-500 font-normal">(Pandit)</span></h2>
+                </div>
+                <button id="ai-close-btn" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div id="ai-chat-messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <!-- Initial Bot Message -->
+                <div class="flex">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16v4m-2-2h4m5 16v4m-2-2h4M12 8a4 4 0 100 8 4 4 0 000-8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9C19.65 5.5 16.15 3 12 3S4.35 5.5 3.512 9a9 9 0 000 6C4.35 18.5 7.85 21 12 21s7.65-2.5 8.488-6a9 9 0 000-6z"></path></svg>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-3 max-w-lg">
+                        <p class="text-sm text-gray-800">Hello! I am Pandit (পণ্ডিত), your AI study assistant. Ask me anything. You can choose which AI model to use below.</p>
+                    </div>
+                </div>
+                <!-- Messages will be added here -->
+            </div>
+            
+            <!-- Chat Input -->
+            <form id="ai-chat-form" class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+                <!-- AI Model Selector (Mock) -->
+                <div class="flex items-center space-x-2 mb-3">
+                    <span class="text-xs font-medium text-gray-600">Using:</span>
+                    <select id="ai-model-select" class="text-sm font-semibold border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                        <option value="notebooklm" selected>NotebookLM (Study/Quiz)</option>
+                        <option value="chatgpt">ChatGPT (General Info)</option>
+                        <option value="perplexity">Perplexity (Research)</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <input type="text" id="ai-chat-input" placeholder="Ask me to summarize notes or quiz you..." class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <button type="submit" class="bg-purple-600 text-white rounded-lg p-2 hover:bg-purple-700 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 
+      ============================================================
+      JAVASCRIPT & FIREBASE
+      ============================================================
+    -->
+    <!-- 3. Load Firebase SDKs -->
+    <script type="module">
+        // Import Firebase services
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged,
+            signInWithCustomToken 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            onSnapshot, 
+            serverTimestamp,
+            doc,
+            setDoc,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES ---
+        let app, db, auth;
+        let currentUserStudentId = null; // This will be the 6-digit '251...' ID
+        let currentFirebaseUser = null; // This is the actual Firebase Auth user
+        
+        // This is the path in Firestore where notes will be stored.
+        // It's public, so all students can see all notes.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'boring-notes-default';
+        const NOTES_COLLECTION_PATH = `/artifacts/${appId}/public/data/boring_notes`;
+
+        // --- DOM ELEMENTS ---
+        const loginModal = document.getElementById('login-modal');
+        const loginForm = document.getElementById('login-form');
+        const studentIdInput = document.getElementById('student-id');
+        const loginError = document.getElementById('login-error');
+        const appContainer = document.getElementById('app-container');
+        const userStudentIdEl = document.getElementById('user-student-id');
+        const aiFab = document.getElementById('ai-fab');
+        
+        const feedContainer = document.getElementById('feed-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const emptyState = document.getElementById('empty-state');
+        
+        const postForm = document.getElementById('post-form');
+        const postSubmitBtn = document.getElementById('post-submit-btn');
+        const postSpinner = document.getElementById('post-spinner');
+        
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        let activeTab = 'text';
+
+        // AI Chat Modal Elements
+        const aiModal = document.getElementById('ai-modal');
+        const aiModalContent = document.getElementById('ai-modal-content');
+        const aiCloseBtn = document.getElementById('ai-close-btn');
+        const aiChatForm = document.getElementById('ai-chat-form');
+        const aiChatInput = document.getElementById('ai-chat-input');
+        const aiChatMessages = document.getElementById('ai-chat-messages');
+        const aiModelSelect = document.getElementById('ai-model-select');
+
+        // --- 1. INITIALIZATION ---
+
+        function initApp() {
+            try {
+                // Get Firebase config from the environment
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                
+                // Handle missing config
+                if (!firebaseConfig.apiKey) {
+                    console.error("Firebase config is missing.");
+                    displayFatalError("Could not connect to the database. Please check configuration.");
+                    return;
+                }
+                
+                // Initialize Firebase
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Sign in and set up listeners
+                authenticateAndLoad();
+
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                displayFatalError("An error occurred while loading the app.");
+            }
+        }
+        
+        function displayFatalError(message) {
+            document.body.innerHTML = `<div class="fixed inset-0 flex items-center justify-center bg-red-100 p-4">
+                <div class="text-center text-red-700 font-semibold">
+                    <h1 class="text-2xl mb-2">Application Error</h1>
+                    <p>${message}</p>
+                </div>
+            </div>`;
+        }
+
+        // --- 2. AUTHENTICATION (MOCK + FIREBASE) ---
+
+        // Handle the "251" ID login attempt
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = studentIdInput.value.trim();
+            
+            // Validation
+            if (id.length !== 6) {
+                loginError.textContent = 'Student ID must be 6 digits.';
+                return;
+            }
+            if (!id.startsWith('251')) {
+                loginError.textContent = 'Student ID must start with 251.';
+                return;
+            }
+            
+            // Mock login successful
+            loginError.textContent = '';
+            currentUserStudentId = id; // Store the 251 ID
+            userStudentIdEl.textContent = currentUserStudentId;
+            
+            // Hide login modal and show app
+            loginModal.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            appContainer.classList.add('flex');
+            aiFab.classList.remove('hidden');
+
+            // Now, initialize Firebase and sign in anonymously
+            initApp();
+        });
+        
+        // This function handles the *actual* Firebase sign-in
+        async function authenticateAndLoad() {
+            try {
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        console.log("Firebase user signed in:", user.uid);
+                        currentFirebaseUser = user;
+                        // Once we have a Firebase user, we can load the notes
+                        listenToNotes();
+                    }
+                });
+
+                // Sign in with token if available, otherwise anonymously
+                if (token) {
+                    await signInWithCustomToken(auth, token);
+                    console.log("Signed in with custom token.");
+                } else {
+                    await signInAnonymously(auth);
+                    console.log("Signed in anonymously.");
+                }
+
+            } catch (error) {
+                console.error("Error during Firebase auth:", error);
+                displayFatalError("Could not sign in to the service.");
+            }
+        }
+
+        // --- 3. NOTE POSTING & RENDERING ---
+
+        // Handle tab switching for the post form
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                
+                // Update buttons
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Update panels
+                tabPanels.forEach(panel => panel.classList.remove('active'));
+                document.getElementById(`tab-panel-${tab}`).classList.add('active');
+                
+                activeTab = tab;
+            });
+        });
+
+        // Handle form submission
+        postForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentFirebaseUser) {
+                // IMPORTANT: Use console.error instead of alert()
+                console.error("User not signed in. Cannot post note.");
+                return;
+            }
+            
+            // Show spinner
+            postSpinner.classList.remove('hidden');
+            postSubmitBtn.disabled = true;
+            postSubmitBtn.querySelector('span').textContent = 'Posting...';
+
+            let noteData = {
+                type: activeTab,
+                studentId: currentUserStudentId, // The '251...' ID
+                authorUid: currentFirebaseUser.uid, // The anonymous Firebase UID
+                createdAt: serverTimestamp(),
+                title: '',
+                content: '',
+                fileName: ''
+            };
+
+            // Get data from the correct tab
+            try {
+                switch(activeTab) {
+                    case 'text':
+                        noteData.title = document.getElementById('post-title-text').value.trim();
+                        noteData.content = document.getElementById('post-content-text').value.trim();
+                        break;
+                    case 'link':
+                        noteData.title = document.getElementById('post-title-link').value.trim();
+                        noteData.content = document.getElementById('post-content-link').value.trim();
+                        break;
+                    case 'video':
+                        noteData.title = document.getElementById('post-title-video').value.trim();
+                        noteData.content = document.getElementById('post-content-video').value.trim();
+                        break;
+                    case 'file':
+                        noteData.title = document.getElementById('post-title-file').value.trim();
+                        const fileInput = document.getElementById('post-content-file');
+                        noteData.fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file selected';
+                        break;
+                }
+                
+                // Basic validation
+                if (!noteData.title || (activeTab !== 'file' && !noteData.content) || (activeTab === 'file' && !noteData.fileName)) {
+                    throw new Error("Title and content are required.");
+                }
+                
+                // Add to Firestore
+                const docRef = await addDoc(collection(db, NOTES_COLLECTION_PATH), noteData);
+                console.log("Document written with ID: ", docRef.id);
+                
+                // Reset form
+                postForm.reset();
+                // Reset tabs to text
+                document.getElementById('tab-btn-text').click();
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                // IMPORTANT: Use console.error or a custom UI message instead of alert()
+                console.error("Error sharing note: " + error.message);
+            } finally {
+                // Hide spinner
+                postSpinner.classList.add('hidden');
+                postSubmitBtn.disabled = false;
+                postSubmitBtn.querySelector('span').textContent = 'Share Note';
+            }
+        });
+
+        // --- 4. REAL-TIME FEED (FIRESTORE) ---
+
+        function listenToNotes() {
+            if (!db) return;
+
+            const q = query(collection(db, NOTES_COLLECTION_PATH));
+            
+            onSnapshot(q, (querySnapshot) => {
+                loadingSpinner.classList.add('hidden');
+                feedContainer.innerHTML = ''; // Clear feed
+                
+                if (querySnapshot.empty) {
+                    emptyState.classList.remove('hidden');
+                    emptyState.classList.add('flex');
+                    return;
+                }
+                
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                
+                const notes = [];
+                querySnapshot.forEach((doc) => {
+                    notes.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort by creation date (newest first)
+                notes.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+                
+                // Render each note
+                notes.forEach(renderNoteCard);
+                
+            }, (error) => {
+                console.error("Error listening to notes: ", error);
+                loadingSpinner.innerHTML = `<p class="text-red-500">Error loading notes.</p>`;
+            });
+        }
+        
+        function renderNoteCard(note) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-xl shadow-lg p-5 border border-gray-200/80 transform transition-all hover:shadow-xl hover:-translate-y-1 duration-200';
+            
+            let contentHtml = '';
+            
+            // Determine content based on type
+            switch(note.type) {
+                case 'text':
+                    contentHtml = `
+                        <div class="flex items-center space-x-3 mb-3">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                            <h3 class="text-lg font-semibold text-gray-900">${escapeHTML(note.title)}</h3>
+                        </div>
+                        <p class="text-gray-700 whitespace-pre-wrap">${escapeHTML(note.content)}</p>
+                    `;
+                    break;
+                case 'link':
+                    contentHtml = `
+                        <div class="flex items-center space-x-3 mb-2">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101"></path></svg>
+                            <h3 class="text-lg font-semibold text-gray-900">${escapeHTML(note.title)}</h3>
+                        </div>
+                        <a href="${escapeHTML(note.content)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 hover:underline break-all">
+                            ${escapeHTML(note.content)}
+                        </a>
+                    `;
+                    break;
+                case 'video':
+                    const videoId = getYouTubeID(note.content);
+                    contentHtml = `
+                        <div class="flex items-center space-x-3 mb-3">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <h3 class="text-lg font-semibold text-gray-900">${escapeHTML(note.title)}</h3>
+                        </div>
+                        ${videoId ? `
+                        <div class="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
+                            <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        ` : `
+                        <p class="text-red-500 text-sm">Invalid YouTube URL. Could not embed video.</p>
+                        <a href="${escapeHTML(note.content)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 hover:underline break-all">
+                            ${escapeHTML(note.content)}
+                        </a>
+                        `}
+                    `;
+                    break;
+                case 'file':
+                    contentHtml = `
+                        <div class="flex items-center space-x-3 mb-2">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.414a4 4 0 00-5.656-5.656l-6.415 6.415a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            <h3 class="text-lg font-semibold text-gray-900">${escapeHTML(note.title)}</h3>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                            <span class="text-gray-800 font-medium truncate">${escapeHTML(note.fileName)}</span>
+                            <span class="text-xs text-blue-600 font-semibold bg-blue-100 px-2 py-1 rounded-full">FILE</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">This is a placeholder. File uploads are not supported in this prototype.</p>
+                    `;
+                    break;
+            }
+            
+            // Footer with author and time
+            const footer = `
+                <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                    <span class="text-sm font-semibold text-blue-700">ID: ${escapeHTML(note.studentId)}</span>
+                    <span class="text-xs text-gray-500">${formatPostTime(note.createdAt)}</span>
+                </div>
+            `;
+            
+            card.innerHTML = contentHtml + footer;
+            feedContainer.appendChild(card);
+        }
+
+        // --- 5. AI CHAT (MOCK) ---
+
+        aiFab.addEventListener('click', () => {
+            aiModal.classList.remove('hidden');
+            setTimeout(() => {
+                aiModal.classList.add('opacity-100');
+                aiModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        });
+
+        // FIX: The corrected arrow function syntax is here
+        aiCloseBtn.addEventListener('click', () => { 
+            aiModal.classList.remove('opacity-100');
+            aiModalContent.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                aiModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        aiChatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = aiChatInput.value.trim();
+            if (!message) return;
+            
+            // Add user message to UI
+            addChatMessage(message, 'user');
+            aiChatInput.value = '';
+            
+            // Show typing indicator
+            addChatMessage('...', 'bot', true);
+            
+            // Mock a response
+            setTimeout(() => {
+                mockBotResponse(message);
+            }, 1500);
+        });
+
+        function addChatMessage(text, sender, isTyping = false) {
+            // Remove typing indicator if it exists
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'flex';
+            
+            if (sender === 'user') {
+                messageWrapper.classList.add('justify-end');
+                messageWrapper.innerHTML = `
+                    <div class="bg-blue-600 text-white rounded-lg p-3 max-w-lg">
+                        <p class="text-sm">${escapeHTML(text)}</p>
+                    </div>
+                `;
+            } else { // 'bot'
+                messageWrapper.classList.add('justify-start');
+                if (isTyping) {
+                    messageWrapper.id = 'typing-indicator';
+                }
+                messageWrapper.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16v4m-2-2h4m5 16v4m-2-2h4M12 8a4 4 0 100 8 4 4 0 000-8z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9C19.65 5.5 16.15 3 12 3S4.35 5.5 3.512 9a9 9 0 000 6C4.35 18.5 7.85 21 12 21s7.65-2.5 8.488-6a9 9 0 000-6z"></path></svg>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg p-3 max-w-lg">
+                        <p class="text-sm text-gray-800 ${isTyping ? 'italic animate-pulse' : ''}">${text.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+            }
+            
+            aiChatMessages.appendChild(messageWrapper);
+            aiChatMessages.scrollTop = aiChatMessages.scrollHeight; // Scroll to bottom
+        }
+        
+        function mockBotResponse(userMessage) {
+            const selectedModel = aiModelSelect.options[aiModelSelect.selectedIndex].text;
+            
+            const response = `
+                This is a mock response from <strong>Pandit (using ${selectedModel})</strong>.
+                
+                In a real application, this is where I would provide an answer based on your request: "${escapeHTML(userMessage)}".
+                
+                Connecting to live AI models like NotebookLM, ChatGPT, and Perplexity requires a secure backend server to protect API keys. This prototype demonstrates the full user interface.
+            `;
+            // The response HTML needs to be sanitized before inserting if coming from an actual LLM, 
+            // but since this is a mock and we want to preserve the <strong> tag, 
+            // we will insert the raw string and modify the addChatMessage function 
+            // to handle line breaks without escaping everything.
+            addChatMessage(response, 'bot');
+        }
+
+        // --- 6. UTILITY FUNCTIONS ---
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+        
+        function getYouTubeID(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function formatPostTime(timestamp) {
+            if (!timestamp) return 'Just now';
+            const date = timestamp.toDate();
+            const now = new Date();
+            const diff = Math.round((now - date) / 1000); // in seconds
+            
+            if (diff < 60) return `${diff}s ago`;
+            if (diff < 3600) return `${Math.round(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.round(diff / 86400)}d ago`;
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+    </script>
+</body>
+</html>
